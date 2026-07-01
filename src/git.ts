@@ -177,6 +177,9 @@ function createGitClient(extraEnv?: NodeJS.ProcessEnv) {
     // (skills are plain text — HTML/MD/JSON — never LFS-tracked).
     //
     // Reported downstream: heygen-com/hyperframes#407.
+    unsafe: {
+      allowUnsafeFilter: true,
+    },
     config: [
       'filter.lfs.required=false',
       'filter.lfs.smudge=',
