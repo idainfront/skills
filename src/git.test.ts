@@ -25,9 +25,12 @@ import {
 } from './git.ts';
 
 function createGitClientMock(clone: ReturnType<typeof vi.fn>) {
-  return {
+  const client = {
     clone,
+    env: vi.fn(() => client),
   };
+
+  return client;
 }
 
 function mockExecFileSuccess(stdout = '', stderr = '') {
@@ -89,6 +92,29 @@ describe('git clone fallbacks', () => {
     expect(isGitHubHttpsCloneUrl('http://github.com/Giphy/giphy-codex-skills.git')).toBe(false);
     expect(isGitHubHttpsCloneUrl('git@github.com:Giphy/giphy-codex-skills.git')).toBe(false);
     expect(isGitHubHttpsCloneUrl('https://gitlab.com/Giphy/giphy-codex-skills.git')).toBe(false);
+  });
+
+  it('allows the controlled git-lfs filter overrides used for clones', async () => {
+    const primaryClone = vi.fn().mockResolvedValue(undefined);
+
+    simpleGitMock.mockReturnValueOnce(createGitClientMock(primaryClone));
+
+    const tempDir = await cloneRepo('ssh://git@stash.example.com:7999/team/agent_knowledge.git');
+    createdDirs.push(tempDir);
+
+    expect(simpleGitMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        unsafe: {
+          allowUnsafeFilter: true,
+        },
+        config: expect.arrayContaining([
+          'filter.lfs.required=false',
+          'filter.lfs.smudge=',
+          'filter.lfs.clean=',
+          'filter.lfs.process=',
+        ]),
+      })
+    );
   });
 
   it('falls back to gh repo clone for GitHub HTTPS auth failures', async () => {

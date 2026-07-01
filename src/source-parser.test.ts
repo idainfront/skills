@@ -1,5 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { parseSource } from './source-parser.js';
+import { beforeAll, describe, it, expect } from 'vitest';
+import type { parseSource as ParseSource } from './source-parser.js';
+
+// Bitbucket shorthand resolution reads SKILLS_BITBUCKET_URL at module load time,
+// so stub it with a fake test domain (never a real internal URL) and dynamically
+// import the module afterwards.
+const TEST_BITBUCKET_URL = 'https://stash.example.com';
+const TEST_BITBUCKET_SSH_HOST = 'stash.example.com:7999';
+
+let parseSource: typeof ParseSource;
+
+beforeAll(async () => {
+  process.env.SKILLS_BITBUCKET_URL = TEST_BITBUCKET_URL;
+  process.env.SKILLS_BITBUCKET_SSH_HOST = TEST_BITBUCKET_SSH_HOST;
+  ({ parseSource } = await import('./source-parser.js'));
+});
 
 describe('source-parser', () => {
   describe('GitLab Custom Domains & Subgroups', () => {
@@ -73,12 +87,21 @@ describe('source-parser', () => {
   });
 
   describe('Existing GitHub Support', () => {
-    it('parses github shorthand', () => {
+    it('parses bare shorthand as Bitbucket with a GitHub fallback', () => {
       const result = parseSource('vercel-labs/agent-skills');
+      expect(result).toEqual({
+        type: 'bitbucket',
+        url: `ssh://git@${TEST_BITBUCKET_SSH_HOST}/vercel-labs/agent-skills.git`,
+        githubFallbackUrl: 'https://github.com/vercel-labs/agent-skills.git',
+      });
+    });
+
+    it('parses github-prefixed shorthand as GitHub', () => {
+      const result = parseSource('github:vercel-labs/agent-skills@nextjs');
       expect(result).toEqual({
         type: 'github',
         url: 'https://github.com/vercel-labs/agent-skills.git',
-        subpath: undefined,
+        skillFilter: 'nextjs',
       });
     });
 
@@ -103,19 +126,19 @@ describe('source-parser', () => {
     it('parses github shorthand with #branch', () => {
       const result = parseSource('vercel-labs/agent-skills#feature/install');
       expect(result).toEqual({
-        type: 'github',
-        url: 'https://github.com/vercel-labs/agent-skills.git',
+        type: 'bitbucket',
+        url: `ssh://git@${TEST_BITBUCKET_SSH_HOST}/vercel-labs/agent-skills.git`,
         ref: 'feature/install',
-        subpath: undefined,
+        githubFallbackUrl: 'https://github.com/vercel-labs/agent-skills.git',
       });
     });
 
     it('parses github shorthand with trailing slash', () => {
       const result = parseSource('vercel-labs/agent-skills/');
       expect(result).toEqual({
-        type: 'github',
-        url: 'https://github.com/vercel-labs/agent-skills.git',
-        subpath: undefined,
+        type: 'bitbucket',
+        url: `ssh://git@${TEST_BITBUCKET_SSH_HOST}/vercel-labs/agent-skills.git`,
+        githubFallbackUrl: 'https://github.com/vercel-labs/agent-skills.git',
       });
     });
 

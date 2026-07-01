@@ -13,8 +13,8 @@ const CYAN = '\x1b[36m';
 const MAGENTA = '\x1b[35m';
 const YELLOW = '\x1b[33m';
 
-// API endpoint for skills search
-const SEARCH_API_BASE = process.env.SKILLS_API_URL || 'https://skills.sh';
+// API endpoint for skills search (injected at build time via build.config.mjs)
+const SEARCH_API_BASE = process.env.SKILLS_API_URL as string;
 
 function formatInstalls(count: number): string {
   if (!count || count <= 0) return '';
@@ -362,7 +362,7 @@ ${DIM}  2) npx skills add <owner/repo@skill>${RESET}`;
       console.log(
         `${TEXT}${pkg}@${skill.name}${RESET}${installs ? ` ${CYAN}${installs}${RESET}` : ''}`
       );
-      console.log(`${DIM}└ https://skills.sh/${skill.slug}${RESET}`);
+      console.log(`${DIM}└ ${SEARCH_API_BASE}/${skill.slug}${RESET}`);
       console.log();
     }
     return;

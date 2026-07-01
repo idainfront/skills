@@ -6,11 +6,28 @@
  * correctly extracts type, url, ref (branch), and subpath.
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { platform } from 'os';
-import { parseSource, getOwnerRepo } from '../src/source-parser.ts';
+import type {
+  parseSource as ParseSource,
+  getOwnerRepo as GetOwnerRepo,
+} from '../src/source-parser.ts';
 
 const isWindows = platform() === 'win32';
+
+// Bitbucket shorthand resolution reads SKILLS_BITBUCKET_URL at module load time,
+// so stub it with a fake test domain (never a real internal URL) and dynamically
+// import the module afterwards.
+const TEST_BITBUCKET_SSH_HOST = 'stash.example.com:7999';
+
+let parseSource: typeof ParseSource;
+let getOwnerRepo: typeof GetOwnerRepo;
+
+beforeAll(async () => {
+  process.env.SKILLS_BITBUCKET_URL = 'https://stash.example.com';
+  process.env.SKILLS_BITBUCKET_SSH_HOST = TEST_BITBUCKET_SSH_HOST;
+  ({ parseSource, getOwnerRepo } = await import('../src/source-parser.ts'));
+});
 
 describe('parseSource', () => {
   describe('GitHub URL tests', () => {
@@ -146,10 +163,11 @@ describe('parseSource', () => {
   });
 
   describe('GitHub shorthand tests', () => {
-    it('GitHub shorthand - owner/repo', () => {
+    it('Bare shorthand - owner/repo defaults to Bitbucket with GitHub fallback', () => {
       const result = parseSource('owner/repo');
-      expect(result.type).toBe('github');
-      expect(result.url).toBe('https://github.com/owner/repo.git');
+      expect(result.type).toBe('bitbucket');
+      expect(result.url).toBe(`ssh://git@${TEST_BITBUCKET_SSH_HOST}/owner/repo.git`);
+      expect(result.githubFallbackUrl).toBe('https://github.com/owner/repo.git');
       expect(result.ref).toBeUndefined();
       expect(result.subpath).toBeUndefined();
     });
@@ -161,32 +179,36 @@ describe('parseSource', () => {
       expect(result.subpath).toBe('skills/my-skill');
     });
 
-    it('GitHub shorthand - owner/repo/ trailing slash', () => {
+    it('Bare shorthand - owner/repo/ trailing slash defaults to Bitbucket', () => {
       const result = parseSource('owner/repo/');
-      expect(result.type).toBe('github');
-      expect(result.url).toBe('https://github.com/owner/repo.git');
+      expect(result.type).toBe('bitbucket');
+      expect(result.url).toBe(`ssh://git@${TEST_BITBUCKET_SSH_HOST}/owner/repo.git`);
+      expect(result.githubFallbackUrl).toBe('https://github.com/owner/repo.git');
       expect(result.subpath).toBeUndefined();
     });
 
-    it('GitHub shorthand - owner/repo@skill (skill filter syntax)', () => {
+    it('Bare shorthand - owner/repo@skill defaults to Bitbucket', () => {
       const result = parseSource('owner/repo@my-skill');
-      expect(result.type).toBe('github');
-      expect(result.url).toBe('https://github.com/owner/repo.git');
+      expect(result.type).toBe('bitbucket');
+      expect(result.url).toBe(`ssh://git@${TEST_BITBUCKET_SSH_HOST}/owner/repo.git`);
+      expect(result.githubFallbackUrl).toBe('https://github.com/owner/repo.git');
       expect(result.skillFilter).toBe('my-skill');
       expect(result.subpath).toBeUndefined();
     });
 
-    it('GitHub shorthand - owner/repo@skill with hyphenated skill name', () => {
+    it('Bare shorthand - owner/repo@skill with hyphenated skill name defaults to Bitbucket', () => {
       const result = parseSource('vercel-labs/agent-skills@find-skills');
-      expect(result.type).toBe('github');
-      expect(result.url).toBe('https://github.com/vercel-labs/agent-skills.git');
+      expect(result.type).toBe('bitbucket');
+      expect(result.url).toBe(`ssh://git@${TEST_BITBUCKET_SSH_HOST}/vercel-labs/agent-skills.git`);
+      expect(result.githubFallbackUrl).toBe('https://github.com/vercel-labs/agent-skills.git');
       expect(result.skillFilter).toBe('find-skills');
     });
 
-    it('GitHub shorthand - owner/repo#branch', () => {
+    it('Bare shorthand - owner/repo#branch defaults to Bitbucket', () => {
       const result = parseSource('owner/repo#my-branch');
-      expect(result.type).toBe('github');
-      expect(result.url).toBe('https://github.com/owner/repo.git');
+      expect(result.type).toBe('bitbucket');
+      expect(result.url).toBe(`ssh://git@${TEST_BITBUCKET_SSH_HOST}/owner/repo.git`);
+      expect(result.githubFallbackUrl).toBe('https://github.com/owner/repo.git');
       expect(result.ref).toBe('my-branch');
       expect(result.subpath).toBeUndefined();
     });
@@ -199,10 +221,11 @@ describe('parseSource', () => {
       expect(result.subpath).toBe('skills/my-skill');
     });
 
-    it('GitHub shorthand - owner/repo#branch@skill', () => {
+    it('Bare shorthand - owner/repo#branch@skill defaults to Bitbucket', () => {
       const result = parseSource('owner/repo#my-branch@my-skill');
-      expect(result.type).toBe('github');
-      expect(result.url).toBe('https://github.com/owner/repo.git');
+      expect(result.type).toBe('bitbucket');
+      expect(result.url).toBe(`ssh://git@${TEST_BITBUCKET_SSH_HOST}/owner/repo.git`);
+      expect(result.githubFallbackUrl).toBe('https://github.com/owner/repo.git');
       expect(result.ref).toBe('my-branch');
       expect(result.skillFilter).toBe('my-skill');
     });

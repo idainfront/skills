@@ -1,4 +1,7 @@
-const TELEMETRY_URL = 'https://add-skill.vercel.sh/t';
+// Injected at build time via build.config.mjs define — override with
+// SKILLS_INTERNAL_TELEMETRY_URL env var when running Jenkins build.
+const INTERNAL_TELEMETRY_URL = process.env.SKILLS_INTERNAL_TELEMETRY_URL as string;
+const UPSTREAM_TELEMETRY_URL = 'https://add-skill.vercel.sh/t';
 const AUDIT_URL = 'https://add-skill.vercel.sh/audit';
 
 interface InstallTelemetryData {
@@ -11,6 +14,7 @@ interface InstallTelemetryData {
   /**
    * Source type for different hosts:
    * - 'github': GitHub repository (default, uses raw.githubusercontent.com)
+   * - 'bitbucket': Internal Bitbucket repository
    * - 'raw': Direct URL to SKILL.md (generic raw URL)
    * - Provider IDs like 'mintlify', 'huggingface', etc.
    */
@@ -165,10 +169,21 @@ export function track(data: TelemetryData): void {
 
     // Fire and forget during the workflow, but track the promise so
     // flushTelemetry() can await it before the process exits.
-    const p = fetch(`${TELEMETRY_URL}?${params.toString()}`)
+    const p = fetch(`${INTERNAL_TELEMETRY_URL}?${params.toString()}`)
       .catch(() => {})
       .then(() => {});
     pendingTelemetry.push(p);
+
+    // For remote (non-internal) installs, also report to the upstream project's
+    // telemetry endpoint so they receive usage data for their ecosystem.
+    const isRemoteSource =
+      'sourceType' in data && data.sourceType !== 'bitbucket' && data.sourceType !== undefined;
+    if (isRemoteSource) {
+      const p2 = fetch(`${UPSTREAM_TELEMETRY_URL}?${params.toString()}`)
+        .catch(() => {})
+        .then(() => {});
+      pendingTelemetry.push(p2);
+    }
   } catch {
     // Silently fail - telemetry should never break the CLI
   }

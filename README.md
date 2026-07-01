@@ -537,3 +537,73 @@ Telemetry is automatically disabled in CI environments.
 ## License
 
 MIT
+
+---
+
+# Ida Infront Fork
+
+> This section documents the changes made in this internal fork. It is
+> intentionally kept separate from the upstream documentation above so the
+> two can be diffed/merged cleanly against [vercel-labs/skills](https://github.com/vercel-labs/skills).
+
+## Why this fork exists
+
+We host our own internal skills in Bitbucket (Stash) and want the `skills`
+CLI to treat that as a first-class, low-friction source — installable with
+the same short `owner/repo` syntax used for public GitHub repos — while
+keeping our usage data separate from the upstream project's telemetry.
+
+## What's different
+
+- **Bitbucket cloning support.** Repos hosted on our internal Bitbucket
+  Server can be cloned over SSH, in addition to GitHub/GitLab/generic git.
+- **Shorthand defaults to Bitbucket.** Bare `owner/repo` shorthand (e.g.
+  `skills add my-team/my-skills`) resolves to our internal Bitbucket Server
+  first. If the repo isn't found there, it transparently falls back to
+  GitHub — so public repos like `vercel-labs/agent-skills` keep working
+  unmodified. Use the explicit `github:owner/repo` prefix to always target
+  GitHub directly.
+- **Separated install telemetry.** Installs from our internal Bitbucket are
+  only reported to our internal telemetry endpoint. Installs from public/
+  remote sources (GitHub, well-known URLs, etc.) are reported to *both* our
+  internal endpoint and upstream's hosted endpoint, so the upstream project
+  still receives usage data for the ecosystem it maintains.
+- **`find` is fully internal.** The `skills find` command only searches our
+  internal skills API and only reports telemetry to our internal endpoint —
+  it never queries or reports to the public `skills.sh` registry.
+
+## Configuration
+
+All internal URLs are injected at **build time** (never hardcoded in source
+or committed to the repo) via required environment variables, enforced in
+`build.config.mjs`. The build fails immediately if any are missing:
+
+| Env var | Purpose |
+| --- | --- |
+| `SKILLS_INTERNAL_TELEMETRY_URL` | Endpoint for internal install/find telemetry |
+| `SKILLS_API_URL` | Internal skills search API used by `skills find` |
+| `SKILLS_BITBUCKET_URL` | Base URL of our Bitbucket Server, used to derive the SSH clone host |
+
+Optional overrides at runtime/build time:
+
+| Env var | Purpose |
+| --- | --- |
+| `SKILLS_BITBUCKET_SSH_HOST` | Explicit `host:port` for Bitbucket SSH clones, if it can't be derived from `SKILLS_BITBUCKET_URL` |
+
+```sh
+# Example Jenkins build invocation
+SKILLS_INTERNAL_TELEMETRY_URL=https://internal.example/api/telemetry \
+SKILLS_API_URL=https://internal.example \
+SKILLS_BITBUCKET_URL=https://stash.internal.example \
+pnpm build
+```
+
+## Keeping this fork in sync
+
+Fork-specific changes are kept intentionally minimal and purely additive
+where possible, so they can be rebased onto new upstream releases with
+minimal conflicts. When rebasing:
+
+1. `git fetch upstream && git rebase upstream/main`
+2. Resolve conflicts (mainly expected in `src/add.ts` and `src/source-parser.ts`)
+3. Re-run `pnpm type-check && pnpm test` before pushing

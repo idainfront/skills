@@ -1073,7 +1073,7 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
     const spinner = p.spinner();
 
     spinner.start('Parsing source...');
-    const parsed = parseSource(source);
+    let parsed = parseSource(source);
     spinner.stop(
       `Source: ${parsed.type === 'local' ? parsed.localPath! : parsed.url}${parsed.ref ? ` @ ${pc.yellow(parsed.ref)}` : ''}${parsed.subpath ? ` (${parsed.subpath})` : ''}${parsed.skillFilter ? ` ${pc.dim('@')}${pc.cyan(parsed.skillFilter)}` : ''}`
     );
@@ -1088,6 +1088,28 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
       if (!ownerRepo) return Promise.resolve(null);
       return isRepoPrivate(ownerRepo.owner, ownerRepo.repo).catch(() => null);
     })();
+
+    const cloneParsedSource = async (): Promise<string> => {
+      try {
+        tempDir = await cloneRepo(parsed.url, parsed.ref);
+        return tempDir;
+      } catch (error) {
+        if (parsed.type !== 'bitbucket' || !parsed.githubFallbackUrl) {
+          throw error;
+        }
+
+        spinner.stop(pc.dim('Bitbucket clone failed; falling back to GitHub...'));
+        parsed = {
+          ...parsed,
+          type: 'github',
+          url: parsed.githubFallbackUrl,
+          githubFallbackUrl: undefined,
+        };
+        spinner.start('Cloning GitHub fallback...');
+        tempDir = await cloneRepo(parsed.url, parsed.ref);
+        return tempDir;
+      }
+    };
 
     // Handle well-known skills from arbitrary URLs
     if (parsed.type === 'well-known') {
@@ -1155,11 +1177,11 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
       } else {
         // Blob failed — fall back to git clone
         spinner.start('Cloning repository...');
-        tempDir = await cloneRepo(parsed.url, parsed.ref);
+        const clonedDir1 = await cloneParsedSource();
         spinner.stop('Repository cloned');
 
         spinner.start('Discovering skills...');
-        skills = await discoverSkills(tempDir, parsed.subpath, {
+        skills = await discoverSkills(clonedDir1, parsed.subpath, {
           includeInternal,
           fullDepth: options.fullDepth,
         });
@@ -1167,11 +1189,11 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
     } else {
       // GitLab, git URL, or --full-depth: always clone
       spinner.start('Cloning repository...');
-      tempDir = await cloneRepo(parsed.url, parsed.ref);
+      const clonedDir2 = await cloneParsedSource();
       spinner.stop('Repository cloned');
 
       spinner.start('Discovering skills...');
-      skills = await discoverSkills(tempDir, parsed.subpath, {
+      skills = await discoverSkills(clonedDir2, parsed.subpath, {
         includeInternal,
         fullDepth: options.fullDepth,
       });
@@ -1743,6 +1765,9 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
     console.log();
     const successful = results.filter((r) => r.success);
     const failed = results.filter((r) => !r.success);
+    // Snapshot tempDir now — cloneParsedSource() closes over it, which confuses
+    // TypeScript's control-flow narrowing in the skill-files loop below.
+    const currentTempDir = tempDir as string | null;
     // Track installation result
     // Build skillFiles map: { skillName: relative path to SKILL.md from repo root }
     const skillFiles: Record<string, string> = {};
@@ -1750,15 +1775,15 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
       if (blobResult && 'repoPath' in skill) {
         // Blob-based: repoPath is already the repo-relative path (e.g., "skills/react/SKILL.md")
         skillFiles[skill.name] = (skill as BlobSkill).repoPath;
-      } else if (tempDir && skill.path === tempDir) {
+      } else if (currentTempDir && skill.path === currentTempDir) {
         // Skill is at root level of repo
         skillFiles[skill.name] = 'SKILL.md';
-      } else if (tempDir && skill.path.startsWith(tempDir + sep)) {
+      } else if (currentTempDir && skill.path.startsWith(currentTempDir + sep)) {
         // Compute path relative to repo root (tempDir), not search path
         // Use forward slashes for telemetry (URL-style paths)
         skillFiles[skill.name] =
           skill.path
-            .slice(tempDir.length + 1)
+            .slice(currentTempDir.length + 1)
             .split(sep)
             .join('/') + '/SKILL.md';
       } else {
@@ -1777,7 +1802,17 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
     // already been running in parallel with the entire install — no stall here.
     if (normalizedSource) {
       const ownerRepo = parseOwnerRepo(normalizedSource);
-      if (ownerRepo) {
+      if (parsed.type === 'bitbucket') {
+        track({
+          event: 'install',
+          source: normalizedSource,
+          skills: selectedSkills.map((s) => s.name).join(','),
+          agents: targetAgents.join(','),
+          ...(installGlobally && { global: '1' }),
+          skillFiles: JSON.stringify(skillFiles),
+          sourceType: 'bitbucket',
+        });
+      } else if (ownerRepo) {
         const isPrivate = await repoPrivacyPromise;
         // Only send telemetry if repo is public (isPrivate === false)
         // If we can't determine (null), err on the side of caution and skip telemetry

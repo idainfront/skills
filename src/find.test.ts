@@ -1,5 +1,21 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { parseFindOptions, searchSkillsAPI } from './find.ts';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import type {
+  parseFindOptions as ParseFindOptions,
+  searchSkillsAPI as SearchSkillsAPI,
+} from './find.ts';
+
+// SEARCH_API_BASE is read from SKILLS_API_URL at module load time, so stub it
+// with a fake test domain (never a real internal URL) and dynamically import
+// the module afterwards.
+const TEST_API_URL = 'https://api.example.test';
+
+let parseFindOptions: typeof ParseFindOptions;
+let searchSkillsAPI: typeof SearchSkillsAPI;
+
+beforeAll(async () => {
+  process.env.SKILLS_API_URL = TEST_API_URL;
+  ({ parseFindOptions, searchSkillsAPI } = await import('./find.ts'));
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -43,6 +59,7 @@ describe('searchSkillsAPI', () => {
     await searchSkillsAPI('react native', 'vercel');
 
     const url = new URL(fetchMock.mock.calls[0]![0] as string);
+    expect(url.origin).toBe(TEST_API_URL);
     expect(url.pathname).toBe('/api/search');
     expect(url.searchParams.get('q')).toBe('react native');
     expect(url.searchParams.get('owner')).toBe('vercel');

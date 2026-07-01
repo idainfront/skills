@@ -141,7 +141,7 @@ function isLocalPath(input: string): boolean {
  */
 // Source aliases: map common shorthand to canonical source
 const SOURCE_ALIASES: Record<string, string> = {
-  'coinbase/agentWallet': 'coinbase/agentic-wallet-skills',
+  'coinbase/agentWallet': 'github:coinbase/agentic-wallet-skills',
 };
 
 interface FragmentRefResult {
@@ -237,6 +237,104 @@ function appendFragmentRef(input: string, ref?: string, skillFilter?: string): s
   return `${input}#${ref}${skillFilter ? `@${skillFilter}` : ''}`;
 }
 
+// Injected at build time via build.config.mjs — no default, falsy disables Bitbucket shorthand.
+const BITBUCKET_URL = process.env.SKILLS_BITBUCKET_URL as string;
+
+function buildGitHubCloneUrl(owner: string, repo: string): string {
+  return `https://github.com/${owner}/${repo}.git`;
+}
+
+function parseGitHubShorthand(
+  input: string,
+  fragmentRef?: string,
+  fragmentSkillFilter?: string
+): ParsedSource {
+  const atMatch = input.match(/^([^/]+)\/([^/@]+)@(.+)$/);
+  if (atMatch) {
+    const [, owner, repo, skillFilter] = atMatch;
+    return {
+      type: 'github',
+      url: buildGitHubCloneUrl(owner!, repo!),
+      ...(fragmentRef ? { ref: fragmentRef } : {}),
+      skillFilter: fragmentSkillFilter || skillFilter,
+    };
+  }
+
+  const shorthandMatch = input.match(/^([^/]+)\/([^/]+)(?:\/(.+?))?\/?$/);
+  if (shorthandMatch) {
+    const [, owner, repo, subpath] = shorthandMatch;
+    return {
+      type: 'github',
+      url: buildGitHubCloneUrl(owner!, repo!),
+      ...(fragmentRef ? { ref: fragmentRef } : {}),
+      subpath: subpath ? sanitizeSubpath(subpath) : subpath,
+      ...(fragmentSkillFilter ? { skillFilter: fragmentSkillFilter } : {}),
+    };
+  }
+
+  return { type: 'git', url: input };
+}
+
+/**
+ * Parse a Bitbucket Server shorthand string (PROJECT/repo or PROJECT/repo@skill)
+ * into a ParsedSource. Uses SSH clone URL so existing git SSH config handles auth.
+ * Requires SKILLS_BITBUCKET_SSH_HOST env var (e.g. stash.example.com:7999);
+ * falls back to parsing the host from SKILLS_BITBUCKET_URL with port 7999.
+ * Clone URL format: ssh://git@stash.example.com:7999/project/repo.git
+ */
+function parseBitbucketShorthand(
+  input: string,
+  fragmentRef?: string,
+  fragmentSkillFilter?: string,
+  options: { githubFallback?: boolean } = {}
+): ParsedSource {
+  const sshHost =
+    process.env.SKILLS_BITBUCKET_SSH_HOST ||
+    (() => {
+      try {
+        const u = new URL(BITBUCKET_URL);
+        return `${u.hostname}:7999`;
+      } catch {
+        return null;
+      }
+    })();
+
+  const buildUrl = (project: string, repo: string) =>
+    sshHost
+      ? `ssh://git@${sshHost}/${project.toLowerCase()}/${repo}.git`
+      : `${BITBUCKET_URL.replace(/\/$/, '')}/scm/${project.toLowerCase()}/${repo}.git`;
+
+  const atMatch = input.match(/^([^/]+)\/([^/@]+)@(.+)$/);
+  if (atMatch) {
+    const [, project, repo, skillFilter] = atMatch;
+    return {
+      type: 'bitbucket',
+      url: buildUrl(project!, repo!),
+      ...(fragmentRef ? { ref: fragmentRef } : {}),
+      skillFilter: fragmentSkillFilter || skillFilter,
+      ...(options.githubFallback
+        ? { githubFallbackUrl: buildGitHubCloneUrl(project!, repo!) }
+        : {}),
+    };
+  }
+
+  const plainMatch = input.match(/^([^/]+)\/([^/]+)$/);
+  if (plainMatch) {
+    const [, project, repo] = plainMatch;
+    return {
+      type: 'bitbucket',
+      url: buildUrl(project!, repo!),
+      ...(fragmentRef ? { ref: fragmentRef } : {}),
+      ...(fragmentSkillFilter ? { skillFilter: fragmentSkillFilter } : {}),
+      ...(options.githubFallback
+        ? { githubFallbackUrl: buildGitHubCloneUrl(project!, repo!) }
+        : {}),
+    };
+  }
+
+  return { type: 'git', url: input };
+}
+
 export function parseSource(input: string): ParsedSource {
   // Local path: absolute, relative, or current directory
   if (isLocalPath(input)) {
@@ -262,11 +360,11 @@ export function parseSource(input: string): ParsedSource {
     input = alias;
   }
 
-  // Prefix shorthand: github:owner/repo -> owner/repo (handled by existing shorthand logic)
+  // Prefix shorthand: github:owner/repo -> GitHub, even when Bitbucket shorthand is default.
   // Also supports github:owner/repo/subpath and github:owner/repo@skill
   const githubPrefixMatch = input.match(/^github:(.+)$/);
   if (githubPrefixMatch) {
-    return parseSource(appendFragmentRef(githubPrefixMatch[1]!, fragmentRef, fragmentSkillFilter));
+    return parseGitHubShorthand(githubPrefixMatch[1]!, fragmentRef, fragmentSkillFilter);
   }
 
   // Prefix shorthand: gitlab:owner/repo -> https://gitlab.com/owner/repo
@@ -363,30 +461,39 @@ export function parseSource(input: string): ParsedSource {
     }
   }
 
-  // GitHub shorthand: owner/repo, owner/repo/path/to/skill, or owner/repo@skill-name
+  // GitHub/Bitbucket shorthand: owner/repo, owner/repo/path/to/skill, or owner/repo@skill-name
+  // Plain owner/repo shorthand resolves to Bitbucket Server first and can fall back to GitHub.
   // Exclude paths that start with . or / to avoid matching local paths
   // First check for @skill syntax: owner/repo@skill-name
   const atSkillMatch = input.match(/^([^/]+)\/([^/@]+)@(.+)$/);
   if (atSkillMatch && !input.includes(':') && !input.startsWith('.') && !input.startsWith('/')) {
     const [, owner, repo, skillFilter] = atSkillMatch;
-    return {
-      type: 'github',
-      url: `https://github.com/${owner}/${repo}.git`,
-      ...(fragmentRef ? { ref: fragmentRef } : {}),
-      skillFilter: fragmentSkillFilter || skillFilter,
-    };
+    if (BITBUCKET_URL) {
+      return parseBitbucketShorthand(
+        `${owner}/${repo}@${skillFilter}`,
+        fragmentRef,
+        fragmentSkillFilter,
+        {
+          githubFallback: true,
+        }
+      );
+    }
+    return parseGitHubShorthand(
+      `${owner}/${repo}@${skillFilter}`,
+      fragmentRef,
+      fragmentSkillFilter
+    );
   }
 
   const shorthandMatch = input.match(/^([^/]+)\/([^/]+)(?:\/(.+?))?\/?$/);
   if (shorthandMatch && !input.includes(':') && !input.startsWith('.') && !input.startsWith('/')) {
     const [, owner, repo, subpath] = shorthandMatch;
-    return {
-      type: 'github',
-      url: `https://github.com/${owner}/${repo}.git`,
-      ...(fragmentRef ? { ref: fragmentRef } : {}),
-      subpath: subpath ? sanitizeSubpath(subpath) : subpath,
-      ...(fragmentSkillFilter ? { skillFilter: fragmentSkillFilter } : {}),
-    };
+    if (BITBUCKET_URL && !subpath) {
+      return parseBitbucketShorthand(`${owner}/${repo}`, fragmentRef, fragmentSkillFilter, {
+        githubFallback: true,
+      });
+    }
+    return parseGitHubShorthand(input, fragmentRef, fragmentSkillFilter);
   }
 
   // Well-known skills: arbitrary HTTP(S) URLs that aren't GitHub/GitLab
