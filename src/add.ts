@@ -1264,6 +1264,16 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
         : await prepareNotionPackSource(options);
       if (!prepared) return;
 
+      effectiveSource = prepared.rootDir;
+      tempDir = prepared.tempDir;
+      notionSourceLabel =
+        'packCount' in prepared
+          ? `${prepared.packCount} selected Notion pack${prepared.packCount === 1 ? '' : 's'}`
+          : 'Notion page';
+      // The pack selection or page URL already chose the skills to install.
+      options.skill = ['*'];
+    }
+
     // In json mode, use an inert spinner: clack spinners poll the terminal and
     // write frames/cursor sequences that must never reach stdout.
     const spinner = jsonMode
@@ -2075,6 +2085,7 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
             ...(installGlobally && { global: '1' }),
             skillFiles: JSON.stringify(skillFiles),
             metadata: options.metadata,
+            sourceType: parsed.type,
           });
         }
       } else {
@@ -2087,6 +2098,7 @@ export async function runAdd(args: string[], options: AddOptions = {}): Promise<
           ...(installGlobally && { global: '1' }),
           skillFiles: JSON.stringify(skillFiles),
           metadata: options.metadata,
+          sourceType: parsed.type,
         });
       }
     }

@@ -353,7 +353,8 @@ function isHostedArtifactUrl(input: string): boolean {
 const BITBUCKET_URL = process.env.SKILLS_BITBUCKET_URL as string;
 
 function buildGitHubCloneUrl(owner: string, repo: string): string {
-  return `https://github.com/${owner}/${repo}.git`;
+  const host = getGitHubHost();
+  return `https://${host}/${owner}/${repo}.git`;
 }
 
 function parseGitHubShorthand(
@@ -361,11 +362,14 @@ function parseGitHubShorthand(
   fragmentRef?: string,
   fragmentSkillFilter?: string
 ): ParsedSource {
+  const host = getGitHubHost();
+  const type = host === 'github.com' ? 'github' : 'git';
+
   const atMatch = input.match(/^([^/]+)\/([^/@]+)@(.+)$/);
   if (atMatch) {
     const [, owner, repo, skillFilter] = atMatch;
     return {
-      type: 'github',
+      type,
       url: buildGitHubCloneUrl(owner!, repo!),
       ...(fragmentRef ? { ref: fragmentRef } : {}),
       skillFilter: fragmentSkillFilter || skillFilter,
@@ -376,7 +380,7 @@ function parseGitHubShorthand(
   if (shorthandMatch) {
     const [, owner, repo, subpath] = shorthandMatch;
     return {
-      type: 'github',
+      type,
       url: buildGitHubCloneUrl(owner!, repo!),
       ...(fragmentRef ? { ref: fragmentRef } : {}),
       subpath: subpath ? sanitizeSubpath(subpath) : subpath,
@@ -445,7 +449,6 @@ function parseBitbucketShorthand(
   }
 
   return { type: 'git', url: input };
-}
 }
 
 export function parseSource(input: string): ParsedSource {
@@ -629,7 +632,7 @@ export function parseSource(input: string): ParsedSource {
   const atSkillMatch = input.match(/^([^/]+)\/([^/@]+)@(.+)$/);
   if (atSkillMatch && !input.includes(':') && !input.startsWith('.') && !input.startsWith('/')) {
     const [, owner, repo, skillFilter] = atSkillMatch;
-    if (BITBUCKET_URL) {
+    if (BITBUCKET_URL && githubHost === 'github.com') {
       return parseBitbucketShorthand(
         `${owner}/${repo}@${skillFilter}`,
         fragmentRef,
@@ -650,7 +653,7 @@ export function parseSource(input: string): ParsedSource {
   const shorthandMatch = input.match(/^([^/]+)\/([^/]+)(?:\/(.+?))?\/?$/);
   if (shorthandMatch && !input.includes(':') && !input.startsWith('.') && !input.startsWith('/')) {
     const [, owner, repo, subpath] = shorthandMatch;
-    if (BITBUCKET_URL && !subpath) {
+    if (BITBUCKET_URL && !subpath && githubHost === 'github.com') {
       return parseBitbucketShorthand(`${owner}/${repo}`, fragmentRef, fragmentSkillFilter, {
         githubFallback: true,
       });
