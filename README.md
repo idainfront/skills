@@ -621,6 +621,9 @@ keeping our usage data separate from the upstream project's telemetry.
 - **`find` is fully internal.** The `skills find` command only searches our
   internal skills API and only reports telemetry to our internal endpoint —
   it never queries or reports to the public `skills.sh` registry.
+- **Portal links use `SKILLS_API_URL`.** All user-facing links to `skills.sh`
+  (banner, `--help`, `init`, search results, and audit details) use the
+  configured `SKILLS_API_URL` instead of the public registry.
 
 ## Configuration
 
@@ -631,7 +634,7 @@ or committed to the repo) via required environment variables, enforced in
 | Env var | Purpose |
 | --- | --- |
 | `SKILLS_INTERNAL_TELEMETRY_URL` | Endpoint for internal install/find telemetry |
-| `SKILLS_API_URL` | Internal skills search API used by `skills find` |
+| `SKILLS_API_URL` | Internal skills search API and portal URL used across the CLI |
 | `SKILLS_BITBUCKET_URL` | Base URL of our Bitbucket Server, used to derive the SSH clone host |
 
 Optional overrides at runtime/build time:
@@ -646,6 +649,17 @@ SKILLS_INTERNAL_TELEMETRY_URL=https://internal.example/api/telemetry \
 SKILLS_API_URL=https://internal.example \
 SKILLS_BITBUCKET_URL=https://stash.internal.example \
 pnpm build
+```
+
+## Publishing
+
+Publish to the internal hosted npm registry. Supply the build environment variables and the hosted registry flag so internal URLs do not need to be committed to `package.json`:
+
+```sh
+SKILLS_INTERNAL_TELEMETRY_URL=https://internal.example/api/telemetry \
+SKILLS_API_URL=https://internal.example \
+SKILLS_BITBUCKET_URL=https://stash.internal.example \
+npm publish --registry https://repo.internal.example/repository/npm-hosted/
 ```
 
 ## Keeping this fork in sync

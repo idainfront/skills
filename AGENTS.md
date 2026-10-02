@@ -156,10 +156,11 @@ CI will fail if code is not properly formatted.
 
 ```bash
 # 1. Bump version in package.json
-# 2. Build
-pnpm build
-# 3. Publish
-npm publish
+# 2. Build and publish with internal URLs to the hosted registry:
+SKILLS_INTERNAL_TELEMETRY_URL=https://internal.example/api/telemetry \
+SKILLS_API_URL=https://internal.example \
+SKILLS_BITBUCKET_URL=https://stash.internal.example \
+npm publish --registry https://repo.internal.example/repository/npm-hosted/
 ```
 
 ## Adding a New Agent

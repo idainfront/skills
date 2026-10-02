@@ -51,7 +51,10 @@ function main() {
   }
 
   // Get license info from license-checker
-  const output = execSync('npx license-checker --json', { encoding: 'utf-8' });
+  const env = { ...process.env };
+  delete env.npm_config_registry;
+  delete env.NPM_CONFIG_REGISTRY;
+  const output = execSync('npx license-checker --json', { encoding: 'utf-8', env });
   const allLicenses: Record<string, LicenseInfo> = JSON.parse(output);
 
   const lines: string[] = [

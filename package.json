@@ -121,9 +121,6 @@
     "url": "git+https://github.com/idainfront/skills.git"
   },
   "homepage": "https://github.com/idainfront/skills#readme",
-  "bugs": {
-    "url": "https://github.com/idainfront/skills/issues"
-  },
   "author": "",
   "license": "MIT",
   "devDependencies": {
