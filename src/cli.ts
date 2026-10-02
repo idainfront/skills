@@ -29,6 +29,9 @@ function getVersion(): string {
 const VERSION = getVersion();
 initTelemetry(VERSION);
 
+// API / web portal URL (injected at build time via build.config.mjs define)
+const SKILLS_API_URL = (process.env.SKILLS_API_URL || 'https://skills.sh').replace(/\/+$/, '');
+
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
 // 256-color grays - visible on both light and dark backgrounds
@@ -67,38 +70,38 @@ function showBanner(): void {
   console.log(`${DIM}The open agent skills ecosystem${RESET}`);
   console.log();
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills add ${DIM}<package>${RESET}        ${DIM}Add a new skill${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills add ${DIM}<package>${RESET}        ${DIM}Add a new skill${RESET}`
   );
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills use ${DIM}<package>@<skill>${RESET} ${DIM}Use a skill without installing${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills use ${DIM}<package>@<skill>${RESET} ${DIM}Use a skill without installing${RESET}`
   );
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills remove${RESET}               ${DIM}Remove installed skills${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills remove${RESET}               ${DIM}Remove installed skills${RESET}`
   );
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills list${RESET}                 ${DIM}List installed skills${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills list${RESET}                 ${DIM}List installed skills${RESET}`
   );
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills find ${DIM}[query]${RESET}         ${DIM}Search for skills${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills find ${DIM}[query]${RESET}         ${DIM}Search for skills${RESET}`
   );
   console.log();
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills update${RESET}               ${DIM}Update installed skills${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills update${RESET}               ${DIM}Update installed skills${RESET}`
   );
   console.log();
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills experimental_install${RESET} ${DIM}Restore from skills-lock.json${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills experimental_install${RESET} ${DIM}Restore from skills-lock.json${RESET}`
   );
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills init ${DIM}[name]${RESET}          ${DIM}Create a new skill${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills init ${DIM}[name]${RESET}          ${DIM}Create a new skill${RESET}`
   );
   console.log(
-    `  ${DIM}$${RESET} ${TEXT}npx skills experimental_sync${RESET}    ${DIM}Sync skills from node_modules${RESET}`
+    `  ${DIM}$${RESET} ${TEXT}npx iiskills experimental_sync${RESET}    ${DIM}Sync skills from node_modules${RESET}`
   );
   console.log();
-  console.log(`${DIM}try:${RESET} npx skills add vercel-labs/agent-skills`);
+  console.log(`${DIM}try:${RESET} npx iiskills add vercel-labs/agent-skills`);
   console.log();
-  console.log(`Discover more skills at ${TEXT}https://skills.sh/${RESET}`);
+  console.log(`Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}`);
   console.log();
 }
 
@@ -198,7 +201,7 @@ ${BOLD}Examples:${RESET}
   ${DIM}$${RESET} skills experimental_sync              ${DIM}# sync from node_modules${RESET}
   ${DIM}$${RESET} skills experimental_sync -y           ${DIM}# sync without prompts${RESET}
 
-Discover more skills at ${TEXT}https://skills.sh/${RESET}
+Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}
 `);
 }
 
@@ -229,7 +232,7 @@ ${BOLD}Examples:${RESET}
   ${DIM}$${RESET} skills remove --all                      ${DIM}# remove all skills${RESET}
   ${DIM}$${RESET} skills remove --skill '*' -a cursor      ${DIM}# remove all skills from cursor${RESET}
 
-Discover more skills at ${TEXT}https://skills.sh/${RESET}
+Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}
 `);
 }
 
@@ -286,13 +289,13 @@ Describe when this skill should be used.
   console.log();
   console.log(`${DIM}Publishing:${RESET}`);
   console.log(
-    `  ${DIM}GitHub:${RESET}  Push to a repo, then ${TEXT}npx skills add <owner>/<repo>${RESET}`
+    `  ${DIM}GitHub:${RESET}  Push to a repo, then ${TEXT}npx iiskills add <owner>/<repo>${RESET}`
   );
   console.log(
-    `  ${DIM}URL:${RESET}     Host the file, then ${TEXT}npx skills add https://example.com/${displayPath}${RESET}`
+    `  ${DIM}URL:${RESET}     Host the file, then ${TEXT}npx iiskills add https://example.com/${displayPath}${RESET}`
   );
   console.log();
-  console.log(`Browse existing skills for inspiration at ${TEXT}https://skills.sh/${RESET}`);
+  console.log(`Browse existing skills for inspiration at ${TEXT}${SKILLS_API_URL}/${RESET}`);
   console.log();
 }
 

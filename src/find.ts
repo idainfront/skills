@@ -14,7 +14,7 @@ const MAGENTA = '\x1b[35m';
 const YELLOW = '\x1b[33m';
 
 // API endpoint for skills search (injected at build time via build.config.mjs)
-const SEARCH_API_BASE = process.env.SKILLS_API_URL as string;
+const SEARCH_API_BASE = (process.env.SKILLS_API_URL || 'https://skills.sh').replace(/\/+$/, '');
 const SEARCH_RESULT_LIMIT = '20';
 
 function formatInstalls(count: number): string {
@@ -410,10 +410,10 @@ ${DIM}  2) npx skills add <owner/repo@skill>${RESET}`;
   const info = getOwnerRepoFromString(pkg);
   if (info && (await isRepoPublic(info.owner, info.repo))) {
     console.log(
-      `${DIM}View the skill at${RESET} ${TEXT}https://skills.sh/${selected.slug}${RESET}`
+      `${DIM}View the skill at${RESET} ${TEXT}${SEARCH_API_BASE}/${selected.slug}${RESET}`
     );
   } else {
-    console.log(`${DIM}Discover more skills at${RESET} ${TEXT}https://skills.sh${RESET}`);
+    console.log(`${DIM}Discover more skills at${RESET} ${TEXT}${SEARCH_API_BASE}${RESET}`);
   }
 
   console.log();

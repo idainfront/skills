@@ -1,10 +1,10 @@
 {
-  "name": "skills",
-  "version": "1.7.0",
-  "description": "The open agent skills ecosystem",
+  "name": "iiskills",
+  "version": "1.7.0-IDA",
+  "description": "The open agent skills ecosystem. Ida modifications.",
   "type": "module",
   "bin": {
-    "skills": "./bin/cli.mjs",
+    "iiskills": "./bin/cli.mjs",
     "add-skill": "./bin/cli.mjs"
   },
   "files": [
@@ -118,11 +118,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vercel-labs/skills.git"
+    "url": "git+https://github.com/idainfront/skills.git"
   },
-  "homepage": "https://github.com/vercel-labs/skills#readme",
+  "homepage": "https://github.com/idainfront/skills#readme",
   "bugs": {
-    "url": "https://github.com/vercel-labs/skills/issues"
+    "url": "https://github.com/idainfront/skills/issues"
   },
   "author": "",
   "license": "MIT",

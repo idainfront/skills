@@ -70,6 +70,9 @@ import {
 const isCancelled = (value: unknown): value is symbol => typeof value === 'symbol';
 const EVE_AGENT_LABEL = 'eve agent';
 
+// Injected at build time via build.config.mjs define
+const SKILLS_API_URL = (process.env.SKILLS_API_URL || 'https://skills.sh').replace(/\/+$/, '');
+
 /**
  * Check if a source identifier (owner/repo format) represents a private GitHub repo.
  * Returns true if private, false if public, null if unable to determine or not a GitHub repo.
@@ -190,7 +193,7 @@ function buildSecurityLines(
 
   // Footer link
   lines.push('');
-  lines.push(`${pc.dim('Details:')} ${pc.dim(`https://skills.sh/${source}`)}`);
+  lines.push(`${pc.dim('Details:')} ${pc.dim(`${SKILLS_API_URL}/${source}`)}`);
 
   return lines;
 }
@@ -614,7 +617,7 @@ function buildJsonSecurity(
     ...(data.ath && { gen: data.ath.risk }),
     ...(data.socket && { socket: `${socketAlerts} alert${socketAlerts !== 1 ? 's' : ''}` }),
     ...(data.snyk && { snyk: data.snyk.risk }),
-    ...(source && { details: `https://skills.sh/${source}` }),
+    ...(source && { details: `${SKILLS_API_URL}/${source}` }),
   };
 }
 
