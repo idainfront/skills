@@ -31,6 +31,9 @@ initTelemetry(VERSION);
 
 // API / web portal URL (injected at build time via build.config.mjs define)
 const SKILLS_API_URL = (process.env.SKILLS_API_URL || 'https://skills.sh').replace(/\/+$/, '');
+const SKILLS_BITBUCKET_URL = (
+  process.env.SKILLS_BITBUCKET_URL || 'https://stash.example.com'
+).replace(/\/+$/, '');
 
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
@@ -39,12 +42,12 @@ const DIM = '\x1b[38;5;102m'; // darker gray for secondary text
 const TEXT = '\x1b[38;5;145m'; // lighter gray for primary text
 
 const LOGO_LINES = [
-  '███████╗██╗  ██╗██╗██╗     ██╗     ███████╗',
-  '██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝',
-  '███████╗█████╔╝ ██║██║     ██║     ███████╗',
-  '╚════██║██╔═██╗ ██║██║     ██║     ╚════██║',
-  '███████║██║  ██╗██║███████╗███████╗███████║',
-  '╚══════╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚══════╝',
+  'ii███████╗██╗  ██╗██╗██╗     ██╗     ███████╗',
+  '  ██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝',
+  '  ███████╗█████╔╝ ██║██║     ██║     ███████╗',
+  '  ╚════██║██╔═██╗ ██║██║     ██║     ╚════██║',
+  '  ███████║██║  ██╗██║███████╗███████╗███████║',
+  '  ╚══════╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚══════╝',
 ];
 
 // 256-color middle grays - visible on both light and dark backgrounds
@@ -67,7 +70,7 @@ function showLogo(): void {
 function showBanner(): void {
   showLogo();
   console.log();
-  console.log(`${DIM}The open agent skills ecosystem${RESET}`);
+  console.log(`${DIM}The open agent skills ecosystem - Modified for Ida Infront${RESET}`);
   console.log();
   console.log(
     `  ${DIM}$${RESET} ${TEXT}npx iiskills add ${DIM}<package>${RESET}        ${DIM}Add a new skill${RESET}`
@@ -99,7 +102,7 @@ function showBanner(): void {
     `  ${DIM}$${RESET} ${TEXT}npx iiskills experimental_sync${RESET}    ${DIM}Sync skills from node_modules${RESET}`
   );
   console.log();
-  console.log(`${DIM}try:${RESET} npx iiskills add vercel-labs/agent-skills`);
+  console.log(`${DIM}try:${RESET} npx iiskills add iic/agent_knowledge`);
   console.log();
   console.log(`Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}`);
   console.log();
@@ -107,14 +110,14 @@ function showBanner(): void {
 
 function showHelp(): void {
   console.log(`
-${BOLD}Usage:${RESET} skills <command> [options]
+${BOLD}Usage:${RESET} iiskills <command> [options]
 
 ${BOLD}Manage Skills:${RESET}
   add <package>        Add a skill package (alias: a)
-                       e.g. vercel-labs/agent-skills
+                       e.g. iic/agent_knowledge
                             notion
                             https://notion.so/<skill-page>
-                            https://github.com/vercel-labs/agent-skills
+                            ${SKILLS_BITBUCKET_URL}/scm/iic/agent_knowledge.git
   use <package>@<skill>
                        Generate a prompt for using one skill without installing it
   remove [skills]      Remove installed skills
@@ -176,30 +179,30 @@ ${BOLD}Options:${RESET}
   --version, -v     Show version number
 
 ${BOLD}Examples:${RESET}
-  ${DIM}$${RESET} skills add vercel-labs/agent-skills
-  ${DIM}$${RESET} skills use vercel-labs/agent-skills@vercel-optimize | claude
-  ${DIM}$${RESET} skills use vercel-labs/agent-skills --skill vercel-optimize --agent claude-code
-  ${DIM}$${RESET} skills add vercel-labs/agent-skills -g
-  ${DIM}$${RESET} skills add vercel-labs/agent-skills --agent claude-code cursor
-  ${DIM}$${RESET} skills add vercel-labs/agent-skills --skill pr-review commit
-  ${DIM}$${RESET} skills add vercel-labs/agent-skills --json -y ${DIM}# JSON output${RESET}
-  ${DIM}$${RESET} skills remove                        ${DIM}# interactive remove${RESET}
-  ${DIM}$${RESET} skills remove web-design             ${DIM}# remove by name${RESET}
-  ${DIM}$${RESET} skills rm --global frontend-design
-  ${DIM}$${RESET} skills list                          ${DIM}# list project skills${RESET}
-  ${DIM}$${RESET} skills ls -g                         ${DIM}# list global skills${RESET}
-  ${DIM}$${RESET} skills ls -a claude-code             ${DIM}# filter by agent${RESET}
-  ${DIM}$${RESET} skills ls --json                      ${DIM}# JSON output${RESET}
-  ${DIM}$${RESET} skills find                          ${DIM}# interactive search${RESET}
-  ${DIM}$${RESET} skills find typescript               ${DIM}# search by keyword${RESET}
-  ${DIM}$${RESET} skills find react --owner vercel     ${DIM}# search within an owner${RESET}
-  ${DIM}$${RESET} skills update
-  ${DIM}$${RESET} skills update my-skill             ${DIM}# update a single skill${RESET}
-  ${DIM}$${RESET} skills update -g                    ${DIM}# update global skills only${RESET}
-  ${DIM}$${RESET} skills experimental_install            ${DIM}# restore from skills-lock.json${RESET}
-  ${DIM}$${RESET} skills init my-skill
-  ${DIM}$${RESET} skills experimental_sync              ${DIM}# sync from node_modules${RESET}
-  ${DIM}$${RESET} skills experimental_sync -y           ${DIM}# sync without prompts${RESET}
+  ${DIM}$${RESET} iiskills add iic/agent_knowledge
+  ${DIM}$${RESET} iiskills use iic/agent_knowledge@java-checkstyle | claude
+  ${DIM}$${RESET} iiskills use iic/agent_knowledge --skill java-checkstyle --agent claude-code
+  ${DIM}$${RESET} iiskills add iic/agent_knowledge -g
+  ${DIM}$${RESET} iiskills add iic/agent_knowledge --agent claude-code cursor
+  ${DIM}$${RESET} iiskills add iic/agent_knowledge --skill java-checkstyle
+  ${DIM}$${RESET} iiskills add iic/agent_knowledge --json -y ${DIM}# JSON output${RESET}
+  ${DIM}$${RESET} iiskills remove                        ${DIM}# interactive remove${RESET}
+  ${DIM}$${RESET} iiskills remove web-design             ${DIM}# remove by name${RESET}
+  ${DIM}$${RESET} iiskills rm --global frontend-design
+  ${DIM}$${RESET} iiskills list                          ${DIM}# list project skills${RESET}
+  ${DIM}$${RESET} iiskills ls -g                         ${DIM}# list global skills${RESET}
+  ${DIM}$${RESET} iiskills ls -a claude-code             ${DIM}# filter by agent${RESET}
+  ${DIM}$${RESET} iiskills ls --json                      ${DIM}# JSON output${RESET}
+  ${DIM}$${RESET} iiskills find                          ${DIM}# interactive search${RESET}
+  ${DIM}$${RESET} iiskills find typescript               ${DIM}# search by keyword${RESET}
+  ${DIM}$${RESET} iiskills find react --owner vercel     ${DIM}# search within an owner${RESET}
+  ${DIM}$${RESET} iiskills update
+  ${DIM}$${RESET} iiskills update my-skill             ${DIM}# update a single skill${RESET}
+  ${DIM}$${RESET} iiskills update -g                    ${DIM}# update global skills only${RESET}
+  ${DIM}$${RESET} iiskills experimental_install            ${DIM}# restore from skills-lock.json${RESET}
+  ${DIM}$${RESET} iiskills init my-skill
+  ${DIM}$${RESET} iiskills experimental_sync              ${DIM}# sync from node_modules${RESET}
+  ${DIM}$${RESET} iiskills experimental_sync -y           ${DIM}# sync without prompts${RESET}
 
 Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}
 `);
@@ -207,7 +210,7 @@ Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}
 
 function showRemoveHelp(): void {
   console.log(`
-${BOLD}Usage:${RESET} skills remove [skills...] [options]
+${BOLD}Usage:${RESET} iiskills remove [skills...] [options]
 
 ${BOLD}Description:${RESET}
   Remove installed skills from agents. If no skill names are provided,
@@ -224,13 +227,13 @@ ${BOLD}Options:${RESET}
   --all              Remove every installed skill (-y implied). Do not combine with named skills.
 
 ${BOLD}Examples:${RESET}
-  ${DIM}$${RESET} skills remove                           ${DIM}# interactive selection${RESET}
-  ${DIM}$${RESET} skills remove my-skill                   ${DIM}# remove specific skill${RESET}
-  ${DIM}$${RESET} skills remove skill1 skill2 -y           ${DIM}# remove multiple skills${RESET}
-  ${DIM}$${RESET} skills remove --global my-skill          ${DIM}# remove from global scope${RESET}
-  ${DIM}$${RESET} skills rm --agent claude-code my-skill   ${DIM}# remove from specific agent${RESET}
-  ${DIM}$${RESET} skills remove --all                      ${DIM}# remove all skills${RESET}
-  ${DIM}$${RESET} skills remove --skill '*' -a cursor      ${DIM}# remove all skills from cursor${RESET}
+  ${DIM}$${RESET} iiskills remove                           ${DIM}# interactive selection${RESET}
+  ${DIM}$${RESET} iiskills remove my-skill                   ${DIM}# remove specific skill${RESET}
+  ${DIM}$${RESET} iiskills remove skill1 skill2 -y           ${DIM}# remove multiple skills${RESET}
+  ${DIM}$${RESET} iiskills remove --global my-skill          ${DIM}# remove from global scope${RESET}
+  ${DIM}$${RESET} iiskills rm --agent claude-code my-skill   ${DIM}# remove from specific agent${RESET}
+  ${DIM}$${RESET} iiskills remove --all                      ${DIM}# remove all skills${RESET}
+  ${DIM}$${RESET} iiskills remove --skill '*' -a cursor      ${DIM}# remove all skills from cursor${RESET}
 
 Discover more skills at ${TEXT}${SKILLS_API_URL}/${RESET}
 `);
@@ -414,7 +417,7 @@ async function main(): Promise<void> {
 
     default:
       console.log(`Unknown command: ${command}`);
-      console.log(`Run ${BOLD}skills --help${RESET} for usage.`);
+      console.log(`Run ${BOLD}iiskills --help${RESET} for usage.`);
       process.exitCode = 1;
   }
 }

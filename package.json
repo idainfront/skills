@@ -1,6 +1,6 @@
 {
   "name": "iiskills",
-  "version": "1.7.0-IDA",
+  "version": "1.7.0-IDA1",
   "description": "The open agent skills ecosystem. Ida modifications.",
   "type": "module",
   "bin": {

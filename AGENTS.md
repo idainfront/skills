@@ -111,7 +111,7 @@ pnpm install
 pnpm build
 
 # Test locally
-pnpm dev add vercel-labs/agent-skills --list
+pnpm dev add iic/agent_knowledge --list
 pnpm dev experimental_sync
 pnpm dev check
 pnpm dev update

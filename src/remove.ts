@@ -84,9 +84,9 @@ export async function removeCommand(skillNames: string[], options: RemoveOptions
   if (options.all && namedSkills.length > 0) {
     p.log.error('Cannot combine --all with specific skill names.');
     p.log.info(
-      'Use `skills remove --all` to remove every skill, or omit --all to remove only the named skills.'
+      'Use `iiskills remove --all` to remove every skill, or omit --all to remove only the named skills.'
     );
-    p.log.info(`Example: skills remove ${namedSkills[0]} -y`);
+    p.log.info(`Example: iiskills remove ${namedSkills[0]} -y`);
     process.exit(1);
   }
 

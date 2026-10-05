@@ -104,11 +104,11 @@ describe('use command', () => {
       const multiple = parseUseOptions(['source', '--agent', 'claude-code', 'codex']);
 
       expect(wildcard.errors).toContain(
-        "skills use --agent does not support '*'; specify exactly one agent."
+        "iiskills use --agent does not support '*'; specify exactly one agent."
       );
       expect(missing.errors).toContain('--agent requires an agent name');
       expect(invalid.errors.join('\n')).toContain('Invalid agents: not-an-agent');
-      expect(multiple.errors).toContain('skills use --agent accepts exactly one agent.');
+      expect(multiple.errors).toContain('iiskills use --agent accepts exactly one agent.');
     });
   });
 

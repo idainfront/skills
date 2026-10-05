@@ -355,16 +355,16 @@ description: ${description}
 
     it('should include list examples in help', () => {
       const result = runCli(['--help']);
-      expect(result.stdout).toContain('skills list');
-      expect(result.stdout).toContain('skills ls -g');
-      expect(result.stdout).toContain('skills ls -a claude-code');
+      expect(result.stdout).toContain('iiskills list');
+      expect(result.stdout).toContain('iiskills ls -g');
+      expect(result.stdout).toContain('iiskills ls -a claude-code');
     });
   });
 
   describe('banner', () => {
     it('should include list command in banner', () => {
       const result = runCli([]);
-      expect(result.stdout).toContain('npx skills list');
+      expect(result.stdout).toContain('npx iiskills list');
       expect(result.stdout).toContain('List installed skills');
     });
   });
